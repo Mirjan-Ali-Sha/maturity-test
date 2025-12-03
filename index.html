@@ -3,21 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maturity Index Game</title>
+    <title>Maturity Index</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
-    </head>
+</head>
 <body>
+
+    <div id="splash-screen">
+        <div class="splash-logo">📈</div>
+        <div class="splash-title">MATURITY INDEX</div>
+        <div class="splash-tagline">Reflect. React. Evolve.</div>
+        <div class="author-credit">Created by Mirjan Ali Sha</div>
+    </div>
 
     <div class="app-container">
         
-        <button id="pause-btn" class="btn btn-float" style="display: none;" onclick="pauseGame()">
-            ⏸
-        </button>
+        <button id="pause-btn" class="btn btn-float" style="display: none;" onclick="pauseGame()">⏸</button>
 
         <div id="screen-home" class="screen active">
             <h1>Maturity Index</h1>
-            <p>Master your life skills across 5 dimensions.</p>
+            <p>Assess your life skills across 5 dimensions.</p>
+
+            <div class="input-group">
+                <input type="text" id="player-name" class="glossy-input" placeholder="Enter Your Name" />
+            </div>
             
             <div id="resume-container" style="display:none; margin-bottom: 20px;">
                 <button class="btn btn-secondary" onclick="resumeGame()">Resume Saved Game ▶</button>
@@ -26,10 +35,6 @@
             <h3>Select Difficulty</h3>
             <div class="level-grid" id="level-list">
                 </div>
-            
-            <div style="margin-top: 2rem; text-align: center;">
-                <small>High scores are saved automatically.</small>
-            </div>
         </div>
 
         <div id="screen-game" class="screen">
@@ -37,45 +42,50 @@
                 <span id="game-level-display" style="font-weight:bold; color:var(--text-light)">Level</span>
                 <span class="category-tag" id="q-category">Category</span>
             </div>
-            
             <div class="progress-container">
                 <div id="progress-fill" class="progress-fill"></div>
             </div>
-
-            <h2 id="q-text">Question text...</h2>
-            
-            <div id="options-container">
-                </div>
+            <h2 id="q-text">Question...</h2>
+            <div id="options-container"></div>
         </div>
 
         <div id="modal-pause" class="modal">
             <h2>Game Paused</h2>
-            <p>Your progress is saved.</p>
             <button class="btn" onclick="resumeGame()">Continue</button>
             <button class="btn btn-secondary" onclick="quitGame()">Quit to Menu</button>
         </div>
 
         <div id="screen-dashboard" class="screen">
-            <h2>Assessment Complete</h2>
-            
             <div class="badge-container" id="badge-display">
-                <span class="badge-icon">🏆</span>
-                <h3 id="badge-title">Level Completed</h3>
-                <p id="badge-msg">Great job!</p>
-                <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary);" id="final-score">0</div>
-                <small>Overall Maturity Score</small>
-            </div>
-
-            <div id="stats-breakdown">
+                <div class="badge-header">
+                    <div class="badge-app-icon">MI</div>
+                    <div style="text-align:left; line-height:1.2">
+                        <small style="font-weight:bold; display:block;">Maturity Index</small>
+                        <small style="font-size:0.7rem;">Reflect. React. Evolve.</small>
+                    </div>
                 </div>
 
-            <button class="btn" onclick="quitGame()">Back to Levels</button>
+                <span class="badge-icon">🏆</span>
+                <h3 id="badge-title">Level Completed</h3>
+                <p id="badge-player" style="font-weight:bold; font-size:1.1rem; color:var(--primary);">Player Name</p>
+                
+                <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary);" id="final-score">0</div>
+                <small>Overall Score</small>
+
+                <div class="badge-footer">
+                    Certified by <br>
+                    <strong>Mirjan Ali Sha</strong>
+                </div>
+            </div>
+
+            <div id="stats-breakdown"></div>
+            <button class="btn" onclick="quitGame()">Back to Home</button>
         </div>
     </div>
 
     <script src="questions.js"></script>
     <script>
-        // --- CONFIGURATION ---
+        // CONFIG
         const LEVELS = [
             { id: 'easy', name: 'Easy', count: 10, icon: '🌱' },
             { id: 'medium', name: 'Medium', count: 20, icon: '🌿' },
@@ -84,41 +94,41 @@
             { id: 'expert', name: 'Expert', count: 50, icon: '👑' }
         ];
 
-        // --- STATE MANAGEMENT ---
-        let gameState = {
-            active: false,
-            levelId: null,
-            queue: [], // Array of question objects
-            currentIndex: 0,
-            scores: {} // { "Emotional": { earned: 0, possible: 0 } }
-        };
+        let gameState = { active: false, levelId: null, queue: [], currentIndex: 0, scores: {}, playerName: "" };
 
-        // --- INIT ---
+        // INIT
         window.onload = () => {
+            // Splash Screen Logic
+            setTimeout(() => {
+                document.getElementById('splash-screen').classList.add('hidden');
+                // Remove from DOM after transition to allow clicking elements below
+                setTimeout(() => { document.getElementById('splash-screen').style.display = 'none'; }, 1000);
+            }, 2500); // 2.5 seconds splash time
+
             renderLevelSelect();
             checkSavedGame();
+            
+            // Load saved name
+            const savedName = localStorage.getItem('maturity_player_name');
+            if(savedName) document.getElementById('player-name').value = savedName;
+
             if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
         };
 
-        // --- LEVEL SYSTEM ---
         function renderLevelSelect() {
             const container = document.getElementById('level-list');
             container.innerHTML = '';
-            
             const highScores = JSON.parse(localStorage.getItem('maturity_high_scores') || '{}');
 
             LEVELS.forEach(lvl => {
                 const score = highScores[lvl.id] ? Math.round(highScores[lvl.id]) : 0;
+                // Add lock icon if previous level not played? (Optional, kept simple for now)
                 
                 const div = document.createElement('div');
                 div.className = 'level-card';
                 div.onclick = () => startNewGame(lvl.id);
                 div.innerHTML = `
-                    <div>
-                        <span style="font-size:1.2rem; margin-right:10px;">${lvl.icon}</span>
-                        <strong>${lvl.name}</strong>
-                        <div style="font-size:0.8rem; color:#666;">${lvl.count * 5} Questions</div> 
-                    </div>
+                    <div><span style="font-size:1.2rem; margin-right:10px;">${lvl.icon}</span><strong>${lvl.name}</strong></div>
                     <div class="score-pill">Best: ${score}</div>
                 `;
                 container.appendChild(div);
@@ -130,64 +140,51 @@
             document.getElementById('resume-container').style.display = saved ? 'block' : 'none';
         }
 
-        // --- GAME ENGINE ---
-
         function startNewGame(levelId) {
+            // 1. Get Player Name
+            const nameInput = document.getElementById('player-name').value.trim();
+            const finalName = nameInput || "Guest Player";
+            localStorage.setItem('maturity_player_name', finalName);
+
+            // 2. Setup State
             const levelConfig = LEVELS.find(l => l.id === levelId);
-            
-            // 1. Reset State
             gameState = {
                 active: true,
                 levelId: levelId,
+                playerName: finalName,
                 queue: generateQuestionQueue(levelConfig.count),
                 currentIndex: 0,
                 scores: {}
             };
 
-            // Initialize Score Categories
-            Object.keys(questionData).forEach(cat => {
-                gameState.scores[cat] = { earned: 0, possible: 0 };
-            });
+            Object.keys(questionData).forEach(cat => { gameState.scores[cat] = { earned: 0, possible: 0 }; });
 
-            // 2. UI Transition
-            saveGameState(); // Initial save
+            saveGameState();
             switchScreen('screen-game');
             document.getElementById('pause-btn').style.display = 'flex';
             document.getElementById('game-level-display').innerText = levelConfig.name;
-            
             renderQuestion();
         }
 
         function generateQuestionQueue(countPerCat) {
             let queue = [];
             for (const [category, questions] of Object.entries(questionData)) {
-                // Shuffle and slice logic
-                // NOTE: If actual questions < countPerCat, we use all available
                 const available = [...questions];
                 const needed = Math.min(countPerCat, available.length);
-                
-                // Fisher-Yates Shuffle
                 for (let i = available.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [available[i], available[j]] = [available[j], available[i]];
                 }
-                
                 const selected = available.slice(0, needed);
                 selected.forEach(q => queue.push({ ...q, category }));
             }
-            // Shuffle the final mixed queue
             return queue.sort(() => 0.5 - Math.random());
         }
 
         function renderQuestion() {
-            if (gameState.currentIndex >= gameState.queue.length) {
-                endGame();
-                return;
-            }
-
+            if (gameState.currentIndex >= gameState.queue.length) { endGame(); return; }
             const q = gameState.queue[gameState.currentIndex];
             
-            // UI Updates
             document.getElementById('q-category').innerText = q.category;
             document.getElementById('q-text').innerText = q.text;
             
@@ -196,8 +193,6 @@
 
             const optContainer = document.getElementById('options-container');
             optContainer.innerHTML = '';
-
-            // Shuffle options
             const shuffledOptions = [...q.options].sort(() => 0.5 - Math.random());
 
             shuffledOptions.forEach(opt => {
@@ -209,24 +204,17 @@
             });
         }
 
-        function handleAnswer(q, answerWeight) {
-            // Scoring Logic: (Answer Weight * Question Importance)
-            gameState.scores[q.category].earned += (answerWeight * q.weight);
+        function handleAnswer(q, w) {
+            gameState.scores[q.category].earned += (w * q.weight);
             gameState.scores[q.category].possible += (1.0 * q.weight);
-
             gameState.currentIndex++;
-            saveGameState(); // Auto-save after every answer
+            saveGameState();
             renderQuestion();
         }
 
-        // --- PAUSE / RESUME / RESET ---
-
-        function pauseGame() {
-            document.getElementById('modal-pause').classList.add('visible');
-        }
-
+        function pauseGame() { document.getElementById('modal-pause').classList.add('visible'); }
+        
         function resumeGame() {
-            // Check if we are resuming from cold start (Home) or Pause (Modal)
             if (!gameState.active) {
                 const saved = localStorage.getItem('maturity_save_state');
                 if (saved) {
@@ -240,9 +228,7 @@
             document.getElementById('modal-pause').classList.remove('visible');
         }
 
-        function saveGameState() {
-            localStorage.setItem('maturity_save_state', JSON.stringify(gameState));
-        }
+        function saveGameState() { localStorage.setItem('maturity_save_state', JSON.stringify(gameState)); }
 
         function quitGame() {
             gameState.active = false;
@@ -253,65 +239,43 @@
             checkSavedGame();
         }
 
-        // --- SCORING & DASHBOARD ---
-
         function endGame() {
-            // Clear save state
             localStorage.removeItem('maturity_save_state');
             document.getElementById('pause-btn').style.display = 'none';
 
-            // 1. Calculate Scores
-            let totalCategoryPercent = 0;
-            let categoryCount = 0;
+            let totalPct = 0, count = 0;
             const statsContainer = document.getElementById('stats-breakdown');
             statsContainer.innerHTML = '';
 
             for (const [cat, data] of Object.entries(gameState.scores)) {
-                // Avoid division by zero
-                const catScore = data.possible === 0 ? 0 : (data.earned / data.possible) * 100;
-                totalCategoryPercent += catScore;
-                categoryCount++;
-
-                // Render Bar
+                const s = data.possible === 0 ? 0 : (data.earned / data.possible) * 100;
+                totalPct += s; count++;
                 statsContainer.innerHTML += `
                     <div class="stat-row">
-                        <span style="width: 100px;">${cat}</span>
-                        <div class="stat-bar-bg">
-                            <div class="stat-bar-fill" style="width: ${catScore}%"></div>
-                        </div>
-                        <span style="width: 40px; text-align:right;">${Math.round(catScore)}%</span>
-                    </div>
-                `;
+                        <span style="width:100px;">${cat}</span>
+                        <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${s}%"></div></div>
+                        <span style="width:40px; text-align:right;">${Math.round(s)}%</span>
+                    </div>`;
             }
 
-            // Weighted Average (Assuming all categories equal weight in Overall score)
-            const finalScore = Math.round(totalCategoryPercent / categoryCount);
-
-            // 2. Save High Score
-            const highScores = JSON.parse(localStorage.getItem('maturity_high_scores') || '{}');
-            const previousBest = highScores[gameState.levelId] || 0;
+            const finalScore = Math.round(totalPct / count);
             
-            if (finalScore > previousBest) {
+            // Save High Score
+            const highScores = JSON.parse(localStorage.getItem('maturity_high_scores') || '{}');
+            if (finalScore > (highScores[gameState.levelId] || 0)) {
                 highScores[gameState.levelId] = finalScore;
                 localStorage.setItem('maturity_high_scores', JSON.stringify(highScores));
             }
 
-            // 3. Render Badge
-            document.getElementById('final-score').innerText = finalScore;
-            const badgeTitle = document.getElementById('badge-title');
-            const badgeMsg = document.getElementById('badge-msg');
-
+            // Populate Badge Details
             const levelName = LEVELS.find(l => l.id === gameState.levelId).name;
-            badgeTitle.innerText = `${levelName} Badge`;
-
-            if (finalScore >= 90) badgeMsg.innerText = "Masterful Maturity!";
-            else if (finalScore >= 70) badgeMsg.innerText = "Solid Growth!";
-            else badgeMsg.innerText = "Room for Improvement.";
+            document.getElementById('badge-title').innerText = `${levelName} Level`;
+            document.getElementById('badge-player').innerText = gameState.playerName;
+            document.getElementById('final-score').innerText = finalScore;
 
             switchScreen('screen-dashboard');
         }
 
-        // --- UTILS ---
         function switchScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
