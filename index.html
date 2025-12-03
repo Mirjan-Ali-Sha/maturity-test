@@ -25,12 +25,11 @@
         <button id="pause-btn" class="btn btn-float" style="display: none;" onclick="pauseGame()">⏸</button>
 
         <div id="screen-home" class="screen active">
-            <h1>Maturity Index</h1>
-            <p>Assess your life skills across 5 dimensions.</p>
-
-            <div class="input-group">
-                <input type="text" id="player-name" class="glossy-input" placeholder="Enter Your Name" />
+            <div style="text-align:center;">
+                <img src="icon.svg" style="width: 80px; height: 80px; margin-bottom: 10px; filter: drop-shadow(0 5px 15px rgba(99,102,241,0.4)); animation: float 4s ease-in-out infinite;">
             </div>
+            <h1>Maturity Index</h1>
+            <p style="margin-bottom: 2rem;">Master your life skills across 5 dimensions.</p>
             
             <div id="resume-container" style="display:none; margin-bottom: 20px;">
                 <button class="btn btn-secondary" onclick="resumeGame()">Resume Saved Game ▶</button>
@@ -64,26 +63,26 @@
             <div class="badge-container" id="badge-display">
                 <div class="badge-header">
                     <div class="badge-app-icon">
-                        <img src="icon.svg" alt="M" style="width:28px; height:28px;">
+                        <img src="icon.svg" alt="App Icon">
                     </div>
                     <div style="text-align:left; line-height:1.2">
-                        <small style="font-weight:bold; display:block; color:#333;">Maturity Index</small>
-                        <small style="font-size:0.6rem; color:#666;">Reflect. React. Evolve.</small>
+                        <small style="font-weight:800; display:block; color:#1f2937; font-size: 1rem; text-transform:uppercase;">Maturity Index</small>
+                        <small style="font-size:0.7rem; color:#6b7280;">Reflect. React. Evolve.</small>
                     </div>
                 </div>
 
                 <span class="badge-icon">🏆</span>
-                <h3 id="badge-title" style="margin:5px 0; color:#333;">Level Completed</h3>
-                <p id="badge-player" style="font-weight:bold; font-size:1.2rem; color:var(--primary); margin: 5px 0;">Player Name</p>
+                <h3 id="badge-title" style="margin:5px 0; color:#374151;">Level Completed</h3>
+                <p id="badge-player" style="font-weight:bold; font-size:1.4rem; color:var(--primary); margin: 5px 0;">Player Name</p>
                 
-                <div style="font-size: 3rem; font-weight: 800; color: var(--primary); line-height:1;" id="final-score">0</div>
-                <small style="color:#666;">Overall Score</small>
+                <div style="font-size: 3.5rem; font-weight: 900; color: var(--primary-dark); line-height:1; margin: 10px 0;" id="final-score">0</div>
+                <small style="color:#6b7280; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Overall Score</small>
 
-                <div id="badge-stats-mini" style="margin-top:15px; display:flex; justify-content:center; gap:5px;">
+                <div id="badge-stats-mini" style="margin-top:20px; display:flex; justify-content:center; gap:6px;">
                     </div>
 
                 <div class="badge-footer">
-                    Certified by <br>
+                    Created by <br>
                     <strong>Mirjan Ali Sha</strong>
                 </div>
             </div>
@@ -108,7 +107,7 @@
             { id: 'expert',  name: 'Expert',  count: 10, icon: '👑' }  
         ];
 
-        // Category Weights
+        // Weights
         const CATEGORY_WEIGHTS = {
             "Emotional":    1.5,
             "Financial":    1.2,
@@ -124,15 +123,11 @@
             const splash = document.getElementById('splash-screen');
             setTimeout(() => {
                 splash.classList.add('hidden');
-                setTimeout(() => { splash.style.display = 'none'; }, 1000);
+                setTimeout(() => { splash.style.display = 'none'; }, 800);
             }, 2500);
 
             renderLevelSelect();
             checkSavedGame();
-            
-            const savedName = localStorage.getItem('maturity_player_name');
-            if(savedName) document.getElementById('player-name').value = savedName;
-
             if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
         };
 
@@ -140,7 +135,6 @@
             const container = document.getElementById('level-list');
             container.innerHTML = '';
             const highScores = JSON.parse(localStorage.getItem('maturity_high_scores') || '{}');
-            const playerName = localStorage.getItem('maturity_player_name') || "Player";
 
             LEVELS.forEach(lvl => {
                 const score = highScores[lvl.id] ? Math.round(highScores[lvl.id]) : null;
@@ -149,7 +143,6 @@
                 const div = document.createElement('div');
                 div.className = 'level-card';
                 
-                // HTML Layout
                 let scoreHtml = '';
                 if (score !== null) {
                     scoreHtml = `
@@ -161,7 +154,7 @@
                         </div>
                     `;
                 } else {
-                    scoreHtml = `<span style="font-size:0.8rem; color:#ccc;">Not Played</span>`;
+                    scoreHtml = `<span style="font-size:0.8rem; color:#9ca3af; font-weight:500;">Start</span>`;
                 }
 
                 div.innerHTML = `
@@ -169,7 +162,7 @@
                         <span style="font-size:2rem;">${lvl.icon}</span>
                         <div style="text-align:left;">
                             <div style="font-weight:700; font-size:1.1rem; color:var(--text);">${lvl.name}</div>
-                            <div style="font-size:0.85rem; color:#9ca3af; font-weight:500;">${totalQuestions} Questions</div>
+                            <div style="font-size:0.85rem; color:#6b7280; font-weight:500;">${totalQuestions} Questions</div>
                         </div>
                     </div>
                     ${scoreHtml}
@@ -178,20 +171,17 @@
             });
         }
 
-        // --- GAME LOGIC (Unchanged) ---
         function checkSavedGame() {
             const saved = localStorage.getItem('maturity_save_state');
             document.getElementById('resume-container').style.display = saved ? 'block' : 'none';
         }
 
+        // --- GAME LOGIC ---
         function startNewGame(levelId) {
-            const nameInput = document.getElementById('player-name').value.trim();
-            const finalName = nameInput || "Guest Player";
-            localStorage.setItem('maturity_player_name', finalName);
-
+            // NOTE: We do NOT ask for name here anymore. We ask at end.
             const levelConfig = LEVELS.find(l => l.id === levelId);
             gameState = {
-                active: true, levelId: levelId, playerName: finalName,
+                active: true, levelId: levelId, playerName: "Player", // Default placeholder
                 queue: generateQuestionQueue(levelConfig.count),
                 currentIndex: 0, scores: {}
             };
@@ -205,46 +195,32 @@
         }
 
         function generateQuestionQueue(countPerCat) {
-                    let queue = [];
-                    // 1. Load history of seen question IDs
-                    let seenIDs = JSON.parse(localStorage.getItem('maturity_seen_questions') || '[]');
-                    
-                    for (const [category, questions] of Object.entries(questionData)) {
-                        // 2. Filter out questions the user has already seen
-                        let available = questions.filter(q => !seenIDs.includes(q.id));
-                        
-                        // 3. Auto-Reshuffle: If we don't have enough new questions, reset history for this category
-                        if (available.length < countPerCat) {
-                            // Remove IDs of this category from seenIDs to "recycle" them
-                            const catIds = questions.map(q => q.id);
-                            seenIDs = seenIDs.filter(id => !catIds.includes(id));
-                            
-                            // Reset available pool to all questions in this category
-                            available = [...questions];
-                        }
-        
-                        // 4. Randomize the available pool
-                        for (let i = available.length - 1; i > 0; i--) {
-                            const j = Math.floor(Math.random() * (i + 1));
-                            [available[i], available[j]] = [available[j], available[i]];
-                        }
-                        
-                        // 5. Select the needed amount
-                        const selected = available.slice(0, countPerCat);
-                        
-                        // 6. Add selected to queue AND mark them as seen
-                        selected.forEach(q => {
-                            queue.push({ ...q, category });
-                            seenIDs.push(q.id);
-                        });
-                    }
-        
-                    // 7. Save updated history back to storage
-                    localStorage.setItem('maturity_seen_questions', JSON.stringify(seenIDs));
-        
-                    // 8. Shuffle the final mixed queue so categories aren't grouped
-                    return queue.sort(() => 0.5 - Math.random());
+            let queue = [];
+            let seenIDs = JSON.parse(localStorage.getItem('maturity_seen_questions') || '[]');
+            
+            for (const [category, questions] of Object.entries(questionData)) {
+                let available = questions.filter(q => !seenIDs.includes(q.id));
+                if (available.length < countPerCat) {
+                    // Recycle IDs
+                    const catIds = questions.map(q => q.id);
+                    seenIDs = seenIDs.filter(id => !catIds.includes(id));
+                    available = [...questions];
                 }
+                // Shuffle available
+                for (let i = available.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [available[i], available[j]] = [available[j], available[i]];
+                }
+                
+                const selected = available.slice(0, countPerCat);
+                selected.forEach(q => {
+                    queue.push({ ...q, category });
+                    seenIDs.push(q.id);
+                });
+            }
+            localStorage.setItem('maturity_seen_questions', JSON.stringify(seenIDs));
+            return queue.sort(() => 0.5 - Math.random());
+        }
 
         function renderQuestion() {
             if (gameState.currentIndex >= gameState.queue.length) { endGame(); return; }
@@ -253,6 +229,7 @@
             document.getElementById('q-text').innerText = q.text;
             const pct = (gameState.currentIndex / gameState.queue.length) * 100;
             document.getElementById('progress-fill').style.width = `${pct}%`;
+            
             const optContainer = document.getElementById('options-container');
             optContainer.innerHTML = '';
             const shuffledOptions = [...q.options].sort(() => 0.5 - Math.random());
@@ -274,6 +251,7 @@
         }
 
         function pauseGame() { document.getElementById('modal-pause').classList.add('visible'); }
+        
         function resumeGame() {
             if (!gameState.active) {
                 const saved = localStorage.getItem('maturity_save_state');
@@ -288,6 +266,7 @@
             document.getElementById('modal-pause').classList.remove('visible');
         }
         function saveGameState() { localStorage.setItem('maturity_save_state', JSON.stringify(gameState)); }
+        
         function quitGame() {
             gameState.active = false;
             document.getElementById('pause-btn').style.display = 'none';
@@ -298,7 +277,6 @@
         }
 
         // --- SCORING & BADGE GEN ---
-
         function endGame() {
             localStorage.removeItem('maturity_save_state');
             document.getElementById('pause-btn').style.display = 'none';
@@ -326,7 +304,7 @@
                 
                 // Mini dots for Badge
                 const color = rawPercent > 70 ? '#10b981' : (rawPercent > 40 ? '#f59e0b' : '#ef4444');
-                miniStatsContainer.innerHTML += `<div style="width:8px; height:8px; border-radius:50%; background:${color};" title="${cat}"></div>`;
+                miniStatsContainer.innerHTML += `<div style="width:10px; height:10px; border-radius:50%; background:${color};" title="${cat}"></div>`;
             }
 
             const finalScore = totalWeightUsed === 0 ? 0 : Math.round(totalWeightedScore / totalWeightUsed);
@@ -338,24 +316,42 @@
                 localStorage.setItem('maturity_high_scores', JSON.stringify(highScores));
             }
 
-            // Populate Badge Details
+            // Populate Badge Details (Temporary name until download)
             const levelName = LEVELS.find(l => l.id === gameState.levelId).name;
             document.getElementById('badge-title').innerText = `${levelName} Level`;
-            document.getElementById('badge-player').innerText = gameState.playerName;
+            
+            // Use stored name if available, else placeholder
+            const storedName = localStorage.getItem('maturity_player_name');
+            document.getElementById('badge-player').innerText = storedName || "Your Name Here";
+            
             document.getElementById('final-score').innerText = finalScore;
 
             switchScreen('screen-dashboard');
         }
 
-        // --- DOWNLOAD LOGIC ---
+        // --- DOWNLOAD LOGIC WITH NAME PROMPT ---
 
         function downloadBadge() {
-            const badgeElement = document.getElementById('badge-display');
+            // 1. Ask for Name
+            let currentName = document.getElementById('badge-player').innerText;
+            if(currentName === "Your Name Here" || currentName === "Player") {
+                currentName = ""; 
+            }
             
-            // Capture options for better quality
+            const newName = prompt("Please enter your name for the badge:", currentName);
+            
+            // If user cancels prompt, we still proceed but with placeholder/old name? 
+            // Better to only proceed if they enter something or leave it as is.
+            if(newName !== null && newName.trim() !== "") {
+                document.getElementById('badge-player').innerText = newName;
+                localStorage.setItem('maturity_player_name', newName); // Remember for next time
+            }
+
+            // 2. Generate Image
+            const badgeElement = document.getElementById('badge-display');
             html2canvas(badgeElement, {
-                scale: 2, // High resolution
-                backgroundColor: "#ffffff", // Force white background (remove transparency)
+                scale: 3, // High Res
+                backgroundColor: null, // Transparent background (CSS handles white box)
                 useCORS: true
             }).then(canvas => {
                 const link = document.createElement('a');
@@ -367,33 +363,39 @@
 
         // Triggered from Home Screen "Download Icon"
         function downloadHighScore(levelId, levelName, score, event) {
-            // Prevent clicking the parent card
             event.stopPropagation();
 
-            const playerName = localStorage.getItem('maturity_player_name') || "Player";
+            // 1. Ask for name
+            let playerName = localStorage.getItem('maturity_player_name') || "";
+            const newName = prompt("Enter your name for this badge:", playerName);
             
-            // 1. Create a temporary badge in the offscreen container
+            if(newName !== null && newName.trim() !== "") {
+                playerName = newName;
+                localStorage.setItem('maturity_player_name', newName);
+            } else if (playerName === "") {
+                playerName = "Player"; // Fallback
+            }
+
+            // 2. Setup Offscreen Badge
             const container = document.getElementById('offscreen-capture');
             container.innerHTML = document.getElementById('badge-display').outerHTML;
-            
-            // 2. Update the temp badge data
             const tempBadge = container.querySelector('.badge-container');
+            
             tempBadge.querySelector('#badge-title').innerText = `${levelName} Level`;
             tempBadge.querySelector('#badge-player').innerText = playerName;
             tempBadge.querySelector('#final-score').innerText = score;
-            // Clear stats dots for clean look on simple download
             tempBadge.querySelector('#badge-stats-mini').innerHTML = ''; 
 
             // 3. Capture
             html2canvas(tempBadge, {
-                scale: 2,
-                backgroundColor: "#ffffff"
+                scale: 3,
+                backgroundColor: null
             }).then(canvas => {
                 const link = document.createElement('a');
                 link.download = `Maturity_Best_${levelId}.png`;
                 link.href = canvas.toDataURL("image/png");
                 link.click();
-                container.innerHTML = ''; // Clean up
+                container.innerHTML = ''; 
             });
         }
 
