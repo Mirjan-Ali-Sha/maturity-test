@@ -95,7 +95,45 @@
             { id: 'hard',    name: 'Hard',    count: 6,  icon: '🌳' }, // 6 * 5 = 30 Total Questions
             { id: 'advance', name: 'Advance', count: 8,  icon: '🌲' }, // 8 * 5 = 40 Total Questions
             { id: 'expert',  name: 'Expert',  count: 10, icon: '👑' }  // 10 * 5 = 50 Total Questions
-        ];
+        // ];
+        // // --- CONFIGURATION ---
+        // // count: Questions PER CATEGORY. Total = count * 5.
+        // const LEVELS = [
+        //     { id: 'easy',    name: 'Easy',    count: 2,  icon: '🌱' }, // 10 Total
+        //     { id: 'medium',  name: 'Medium',  count: 4,  icon: '🌿' }, // 20 Total
+        //     { id: 'hard',    name: 'Hard',    count: 6,  icon: '🌳' }, // 30 Total
+        //     { id: 'advance', name: 'Advance', count: 8,  icon: '🌲' }, // 40 Total
+        //     { id: 'expert',  name: 'Expert',  count: 10, icon: '👑' }  // 50 Total
+        // ];
+
+        // --- RENDER FUNCTION ---
+        function renderLevelSelect() {
+            const container = document.getElementById('level-list');
+            container.innerHTML = '';
+            const highScores = JSON.parse(localStorage.getItem('maturity_high_scores') || '{}');
+
+            LEVELS.forEach(lvl => {
+                const score = highScores[lvl.id] ? Math.round(highScores[lvl.id]) : 0;
+                const totalQuestions = lvl.count * 5; // Calculate total here
+
+                const div = document.createElement('div');
+                div.className = 'level-card';
+                div.onclick = () => startNewGame(lvl.id);
+                
+                // Updated HTML structure for better layout
+                div.innerHTML = `
+                    <div style="display:flex; align-items:center; gap: 15px;">
+                        <span style="font-size:2rem;">${lvl.icon}</span>
+                        <div style="text-align:left;">
+                            <div style="font-weight:700; font-size:1.1rem; color:var(--text);">${lvl.name}</div>
+                            <div style="font-size:0.85rem; color:#9ca3af; font-weight:500;">${totalQuestions} Questions</div>
+                        </div>
+                    </div>
+                    <div class="score-pill">Best: ${score}</div>
+                `;
+                container.appendChild(div);
+            });
+        }
 
         let gameState = { active: false, levelId: null, queue: [], currentIndex: 0, scores: {}, playerName: "" };
 
