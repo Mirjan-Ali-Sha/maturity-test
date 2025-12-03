@@ -6,9 +6,10 @@
     <title>Maturity Index</title>
     
     <link rel="icon" type="image/svg+xml" href="icon.svg">
-    
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
+    
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 </head>
 <body>
 
@@ -59,23 +60,27 @@
         </div>
 
         <div id="screen-dashboard" class="screen">
+            
             <div class="badge-container" id="badge-display">
                 <div class="badge-header">
                     <div class="badge-app-icon">
-                        <img src="icon.svg" alt="M" style="width:24px; height:24px;">
+                        <img src="icon.svg" alt="M" style="width:28px; height:28px;">
                     </div>
                     <div style="text-align:left; line-height:1.2">
-                        <small style="font-weight:bold; display:block;">Maturity Index</small>
-                        <small style="font-size:0.7rem;">Reflect. React. Evolve.</small>
+                        <small style="font-weight:bold; display:block; color:#333;">Maturity Index</small>
+                        <small style="font-size:0.6rem; color:#666;">Reflect. React. Evolve.</small>
                     </div>
                 </div>
 
                 <span class="badge-icon">🏆</span>
-                <h3 id="badge-title">Level Completed</h3>
-                <p id="badge-player" style="font-weight:bold; font-size:1.1rem; color:var(--primary);">Player Name</p>
+                <h3 id="badge-title" style="margin:5px 0; color:#333;">Level Completed</h3>
+                <p id="badge-player" style="font-weight:bold; font-size:1.2rem; color:var(--primary); margin: 5px 0;">Player Name</p>
                 
-                <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary);" id="final-score">0</div>
-                <small>Overall Score</small>
+                <div style="font-size: 3rem; font-weight: 800; color: var(--primary); line-height:1;" id="final-score">0</div>
+                <small style="color:#666;">Overall Score</small>
+
+                <div id="badge-stats-mini" style="margin-top:15px; display:flex; justify-content:center; gap:5px;">
+                    </div>
 
                 <div class="badge-footer">
                     Certified by <br>
@@ -83,40 +88,48 @@
                 </div>
             </div>
 
-            <div id="stats-breakdown"></div>
-            <button class="btn" onclick="quitGame()">Back to Home</button>
+            <button class="btn btn-save" onclick="downloadBadge()">📸 Save Badge to Gallery</button>
+            
+            <div id="stats-breakdown" style="margin-top:20px;"></div>
+            <button class="btn btn-secondary" onclick="quitGame()">Back to Home</button>
         </div>
     </div>
+
+    <div id="offscreen-capture" style="position:absolute; left:-9999px; top:0; width: 350px;"></div>
 
     <script src="questions.js"></script>
     <script>
         // --- CONFIGURATION ---
-        // count: Questions PER CATEGORY. Total = count * 5.
         const LEVELS = [
-            { id: 'easy',    name: 'Easy',    count: 2,  icon: '🌱' }, // 10 Total
-            { id: 'medium',  name: 'Medium',  count: 4,  icon: '🌿' }, // 20 Total
-            { id: 'hard',    name: 'Hard',    count: 6,  icon: '🌳' }, // 30 Total
-            { id: 'advance', name: 'Advance', count: 8,  icon: '🌲' }, // 40 Total
-            { id: 'expert',  name: 'Expert',  count: 10, icon: '👑' }  // 50 Total
+            { id: 'easy',    name: 'Easy',    count: 2,  icon: '🌱' }, 
+            { id: 'medium',  name: 'Medium',  count: 4,  icon: '🌿' }, 
+            { id: 'hard',    name: 'Hard',    count: 6,  icon: '🌳' }, 
+            { id: 'advance', name: 'Advance', count: 8,  icon: '🌲' }, 
+            { id: 'expert',  name: 'Expert',  count: 10, icon: '👑' }  
         ];
+
+        // Category Weights
+        const CATEGORY_WEIGHTS = {
+            "Emotional":    1.5,
+            "Financial":    1.2,
+            "Professional": 1.0, 
+            "Social":       1.0,
+            "Resilience":   0.8  
+        };
 
         let gameState = { active: false, levelId: null, queue: [], currentIndex: 0, scores: {}, playerName: "" };
 
         // INIT
         window.onload = () => {
-            // Fix: Ensure Splash Screen Removal Logic runs
             const splash = document.getElementById('splash-screen');
             setTimeout(() => {
                 splash.classList.add('hidden');
-                setTimeout(() => { 
-                    splash.style.display = 'none'; 
-                }, 1000); // Wait for CSS opacity transition to finish
-            }, 2500); // 2.5 seconds visible time
+                setTimeout(() => { splash.style.display = 'none'; }, 1000);
+            }, 2500);
 
             renderLevelSelect();
             checkSavedGame();
             
-            // Load saved name
             const savedName = localStorage.getItem('maturity_player_name');
             if(savedName) document.getElementById('player-name').value = savedName;
 
@@ -127,50 +140,61 @@
             const container = document.getElementById('level-list');
             container.innerHTML = '';
             const highScores = JSON.parse(localStorage.getItem('maturity_high_scores') || '{}');
+            const playerName = localStorage.getItem('maturity_player_name') || "Player";
 
             LEVELS.forEach(lvl => {
-                const score = highScores[lvl.id] ? Math.round(highScores[lvl.id]) : 0;
+                const score = highScores[lvl.id] ? Math.round(highScores[lvl.id]) : null;
                 const totalQuestions = lvl.count * 5; 
 
                 const div = document.createElement('div');
                 div.className = 'level-card';
-                div.onclick = () => startNewGame(lvl.id);
+                
+                // HTML Layout
+                let scoreHtml = '';
+                if (score !== null) {
+                    scoreHtml = `
+                        <div class="score-pill-container">
+                            <span class="score-pill">Best: ${score}</span>
+                            <button class="btn-icon-small" onclick="downloadHighScore('${lvl.id}', '${lvl.name}', ${score}, event)">
+                                📥
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    scoreHtml = `<span style="font-size:0.8rem; color:#ccc;">Not Played</span>`;
+                }
+
                 div.innerHTML = `
-                    <div style="display:flex; align-items:center; gap: 15px;">
+                    <div style="display:flex; align-items:center; gap: 15px;" onclick="startNewGame('${lvl.id}')">
                         <span style="font-size:2rem;">${lvl.icon}</span>
                         <div style="text-align:left;">
                             <div style="font-weight:700; font-size:1.1rem; color:var(--text);">${lvl.name}</div>
                             <div style="font-size:0.85rem; color:#9ca3af; font-weight:500;">${totalQuestions} Questions</div>
                         </div>
                     </div>
-                    <div class="score-pill">Best: ${score}</div>
+                    ${scoreHtml}
                 `;
                 container.appendChild(div);
             });
         }
 
+        // --- GAME LOGIC (Unchanged) ---
         function checkSavedGame() {
             const saved = localStorage.getItem('maturity_save_state');
             document.getElementById('resume-container').style.display = saved ? 'block' : 'none';
         }
 
         function startNewGame(levelId) {
-            // 1. Get Player Name
             const nameInput = document.getElementById('player-name').value.trim();
             const finalName = nameInput || "Guest Player";
             localStorage.setItem('maturity_player_name', finalName);
 
-            // 2. Setup State
             const levelConfig = LEVELS.find(l => l.id === levelId);
             gameState = {
-                active: true,
-                levelId: levelId,
-                playerName: finalName,
+                active: true, levelId: levelId, playerName: finalName,
                 queue: generateQuestionQueue(levelConfig.count),
-                currentIndex: 0,
-                scores: {}
+                currentIndex: 0, scores: {}
             };
-
             Object.keys(questionData).forEach(cat => { gameState.scores[cat] = { earned: 0, possible: 0 }; });
 
             saveGameState();
@@ -181,35 +205,57 @@
         }
 
         function generateQuestionQueue(countPerCat) {
-            let queue = [];
-            for (const [category, questions] of Object.entries(questionData)) {
-                const available = [...questions];
-                const needed = Math.min(countPerCat, available.length);
-                // Fisher-Yates Shuffle
-                for (let i = available.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [available[i], available[j]] = [available[j], available[i]];
+                    let queue = [];
+                    // 1. Load history of seen question IDs
+                    let seenIDs = JSON.parse(localStorage.getItem('maturity_seen_questions') || '[]');
+                    
+                    for (const [category, questions] of Object.entries(questionData)) {
+                        // 2. Filter out questions the user has already seen
+                        let available = questions.filter(q => !seenIDs.includes(q.id));
+                        
+                        // 3. Auto-Reshuffle: If we don't have enough new questions, reset history for this category
+                        if (available.length < countPerCat) {
+                            // Remove IDs of this category from seenIDs to "recycle" them
+                            const catIds = questions.map(q => q.id);
+                            seenIDs = seenIDs.filter(id => !catIds.includes(id));
+                            
+                            // Reset available pool to all questions in this category
+                            available = [...questions];
+                        }
+        
+                        // 4. Randomize the available pool
+                        for (let i = available.length - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            [available[i], available[j]] = [available[j], available[i]];
+                        }
+                        
+                        // 5. Select the needed amount
+                        const selected = available.slice(0, countPerCat);
+                        
+                        // 6. Add selected to queue AND mark them as seen
+                        selected.forEach(q => {
+                            queue.push({ ...q, category });
+                            seenIDs.push(q.id);
+                        });
+                    }
+        
+                    // 7. Save updated history back to storage
+                    localStorage.setItem('maturity_seen_questions', JSON.stringify(seenIDs));
+        
+                    // 8. Shuffle the final mixed queue so categories aren't grouped
+                    return queue.sort(() => 0.5 - Math.random());
                 }
-                const selected = available.slice(0, needed);
-                selected.forEach(q => queue.push({ ...q, category }));
-            }
-            return queue.sort(() => 0.5 - Math.random());
-        }
 
         function renderQuestion() {
             if (gameState.currentIndex >= gameState.queue.length) { endGame(); return; }
             const q = gameState.queue[gameState.currentIndex];
-            
             document.getElementById('q-category').innerText = q.category;
             document.getElementById('q-text').innerText = q.text;
-            
             const pct = (gameState.currentIndex / gameState.queue.length) * 100;
             document.getElementById('progress-fill').style.width = `${pct}%`;
-
             const optContainer = document.getElementById('options-container');
             optContainer.innerHTML = '';
             const shuffledOptions = [...q.options].sort(() => 0.5 - Math.random());
-
             shuffledOptions.forEach(opt => {
                 const btn = document.createElement('div');
                 btn.className = 'option-card';
@@ -228,7 +274,6 @@
         }
 
         function pauseGame() { document.getElementById('modal-pause').classList.add('visible'); }
-        
         function resumeGame() {
             if (!gameState.active) {
                 const saved = localStorage.getItem('maturity_save_state');
@@ -242,9 +287,7 @@
             }
             document.getElementById('modal-pause').classList.remove('visible');
         }
-
         function saveGameState() { localStorage.setItem('maturity_save_state', JSON.stringify(gameState)); }
-
         function quitGame() {
             gameState.active = false;
             document.getElementById('pause-btn').style.display = 'none';
@@ -254,26 +297,39 @@
             checkSavedGame();
         }
 
+        // --- SCORING & BADGE GEN ---
+
         function endGame() {
             localStorage.removeItem('maturity_save_state');
             document.getElementById('pause-btn').style.display = 'none';
 
-            let totalPct = 0, count = 0;
+            let totalWeightedScore = 0;
+            let totalWeightUsed = 0;
             const statsContainer = document.getElementById('stats-breakdown');
+            const miniStatsContainer = document.getElementById('badge-stats-mini');
             statsContainer.innerHTML = '';
+            miniStatsContainer.innerHTML = '';
 
             for (const [cat, data] of Object.entries(gameState.scores)) {
-                const s = data.possible === 0 ? 0 : (data.earned / data.possible) * 100;
-                totalPct += s; count++;
+                const rawPercent = data.possible === 0 ? 0 : (data.earned / data.possible) * 100;
+                const weight = CATEGORY_WEIGHTS[cat] || 1.0;
+                totalWeightedScore += (rawPercent * weight);
+                totalWeightUsed += weight;
+
+                // Full Stat Bar
                 statsContainer.innerHTML += `
                     <div class="stat-row">
                         <span style="width:100px;">${cat}</span>
-                        <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${s}%"></div></div>
-                        <span style="width:40px; text-align:right;">${Math.round(s)}%</span>
+                        <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${rawPercent}%"></div></div>
+                        <span style="width:40px; text-align:right;">${Math.round(rawPercent)}%</span>
                     </div>`;
+                
+                // Mini dots for Badge
+                const color = rawPercent > 70 ? '#10b981' : (rawPercent > 40 ? '#f59e0b' : '#ef4444');
+                miniStatsContainer.innerHTML += `<div style="width:8px; height:8px; border-radius:50%; background:${color};" title="${cat}"></div>`;
             }
 
-            const finalScore = Math.round(totalPct / count);
+            const finalScore = totalWeightUsed === 0 ? 0 : Math.round(totalWeightedScore / totalWeightUsed);
             
             // Save High Score
             const highScores = JSON.parse(localStorage.getItem('maturity_high_scores') || '{}');
@@ -289,6 +345,56 @@
             document.getElementById('final-score').innerText = finalScore;
 
             switchScreen('screen-dashboard');
+        }
+
+        // --- DOWNLOAD LOGIC ---
+
+        function downloadBadge() {
+            const badgeElement = document.getElementById('badge-display');
+            
+            // Capture options for better quality
+            html2canvas(badgeElement, {
+                scale: 2, // High resolution
+                backgroundColor: "#ffffff", // Force white background (remove transparency)
+                useCORS: true
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Maturity_Badge_${gameState.levelId}.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+            });
+        }
+
+        // Triggered from Home Screen "Download Icon"
+        function downloadHighScore(levelId, levelName, score, event) {
+            // Prevent clicking the parent card
+            event.stopPropagation();
+
+            const playerName = localStorage.getItem('maturity_player_name') || "Player";
+            
+            // 1. Create a temporary badge in the offscreen container
+            const container = document.getElementById('offscreen-capture');
+            container.innerHTML = document.getElementById('badge-display').outerHTML;
+            
+            // 2. Update the temp badge data
+            const tempBadge = container.querySelector('.badge-container');
+            tempBadge.querySelector('#badge-title').innerText = `${levelName} Level`;
+            tempBadge.querySelector('#badge-player').innerText = playerName;
+            tempBadge.querySelector('#final-score').innerText = score;
+            // Clear stats dots for clean look on simple download
+            tempBadge.querySelector('#badge-stats-mini').innerHTML = ''; 
+
+            // 3. Capture
+            html2canvas(tempBadge, {
+                scale: 2,
+                backgroundColor: "#ffffff"
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Maturity_Best_${levelId}.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+                container.innerHTML = ''; // Clean up
+            });
         }
 
         function switchScreen(id) {
