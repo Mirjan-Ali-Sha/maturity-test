@@ -79,6 +79,26 @@ p { color: var(--text-light); line-height: 1.6; }
 .btn-float { position: absolute; top: 1rem; right: 1rem; width: 40px; height: 40px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; z-index: 100;}
 
 /* Level Select Grid */
+/* Add/Update this in style.css */
+.level-card {
+    background: white; 
+    border: 2px solid transparent; 
+    padding: 15px 20px; /* More padding */
+    border-radius: 16px; /* Rounder corners */
+    cursor: pointer; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02); /* Softer shadow */
+    transition: all 0.2s ease;
+    margin-bottom: 12px;
+}
+
+.level-card:hover { 
+    border-color: var(--primary); 
+    transform: translateY(-3px); 
+    box-shadow: 0 10px 15px rgba(99, 102, 241, 0.15); /* Glossy glow on hover */
+}
 .level-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin: 20px 0; }
 .level-card {
     background: white; border: 2px solid transparent; padding: 15px; border-radius: 12px;
