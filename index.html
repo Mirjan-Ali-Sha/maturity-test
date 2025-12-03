@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maturity Assessment</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+
+    <div class="app-container">
+        <div id="start-screen" class="screen active">
+            <h1>Maturity Index</h1>
+            <p>Assess your Emotional, Financial, and Social maturity through scenario-based analysis.</p>
+            <button onclick="startGame()">Start Assessment</button>
+        </div>
+
+        <div id="quiz-screen" class="screen">
+            <div class="progress-bar">
+                <div id="progress-fill"></div>
+            </div>
+            <div class="category-badge" id="q-category">Category</div>
+            <h2 id="q-text">Question text goes here?</h2>
+            <div id="options-container" class="options-grid">
+                </div>
+        </div>
+
+        <div id="dashboard-screen" class="screen">
+            <h2>Maturity Profile</h2>
+            
+            <div class="overall-score">
+                <svg viewBox="0 0 36 36" class="circular-chart">
+                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path id="score-circle" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                </svg>
+                <div class="score-text">
+                    <span id="total-score">0</span>%
+                    <small>Overall</small>
+                </div>
+            </div>
+
+            <div id="category-breakdown" class="breakdown-grid">
+                </div>
+
+            <button onclick="location.reload()" class="restart-btn">Retake Assessment</button>
+        </div>
+    </div>
+
+    <script src="questions.js"></script>
+    <script>
+        // CONFIGURATION
+        const QUESTIONS_PER_CATEGORY = 2; // Set to 10 for production
+        
+        let sessionQuestions = [];
+        let currentQuestionIndex = 0;
+        let userAnswers = {}; // Stores scores per category
+
+        // Initialize PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+
+        function startGame() {
+            // 1. Select Random Questions
+            sessionQuestions = [];
+            userAnswers = {};
+            
+            for (const [category, questions] of Object.entries(questionData)) {
+                // Initialize score trackers
+                userAnswers[category] = { earned: 0, possible: 0 };
+                
+                // Shuffle and Slice
+                const shuffled = [...questions].sort(() => 0.5 - Math.random());
+                const selected = shuffled.slice(0, QUESTIONS_PER_CATEGORY);
+                
+                // Add category metadata to question object for easier processing
+                selected.forEach(q => sessionQuestions.push({ ...q, category }));
+            }
+
+            // Shuffle the entire session deck so categories are mixed
+            sessionQuestions.sort(() => 0.5 - Math.random());
+
+            document.getElementById('start-screen').classList.remove('active');
+            document.getElementById('quiz-screen').classList.add('active');
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            if (currentQuestionIndex >= sessionQuestions.length) {
+                showDashboard();
+                return;
+            }
+
+            const q = sessionQuestions[currentQuestionIndex];
+            document.getElementById('q-category').innerText = q.category;
+            document.getElementById('q-text').innerText = q.text;
+            
+            // Update Progress
+            const pct = ((currentQuestionIndex) / sessionQuestions.length) * 100;
+            document.getElementById('progress-fill').style.width = `${pct}%`;
+
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+
+            // Shuffle options too
+            const shuffledOptions = [...q.options].sort(() => 0.5 - Math.random());
+
+            shuffledOptions.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'option-card';
+                btn.innerText = opt.text;
+                btn.onclick = () => handleAnswer(q, opt.weight);
+                container.appendChild(btn);
+            });
+        }
+
+        function handleAnswer(question, answerWeight) {
+            // Logic: Weighted Score Calculation
+            // Score += AnswerWeight * QuestionWeight
+            // MaxPossible += MaxAnswerWeight(1.0) * QuestionWeight
+            
+            const cat = question.category;
+            userAnswers[cat].earned += (answerWeight * question.weight);
+            userAnswers[cat].possible += (1.0 * question.weight); // Assuming max weight of an option is always 1.0
+
+            currentQuestionIndex++;
+            renderQuestion();
+        }
+
+        function showDashboard() {
+            document.getElementById('quiz-screen').classList.remove('active');
+            document.getElementById('dashboard-screen').classList.add('active');
+
+            const breakdownContainer = document.getElementById('category-breakdown');
+            let totalEarned = 0;
+            let totalPossible = 0;
+
+            for (const [category, scores] of Object.entries(userAnswers)) {
+                // Calculate Category %
+                const catScore = scores.possible === 0 ? 0 : Math.round((scores.earned / scores.possible) * 100);
+                
+                totalEarned += scores.earned;
+                totalPossible += scores.possible;
+
+                // Create Card
+                const card = document.createElement('div');
+                card.className = 'stat-card';
+                card.innerHTML = `
+                    <h3>${category}</h3>
+                    <div class="bar-container">
+                        <div class="bar-fill" style="width: ${catScore}%"></div>
+                    </div>
+                    <span>${catScore}% Maturity</span>
+                `;
+                breakdownContainer.appendChild(card);
+            }
+
+            // Calculate Overall
+            const overall = totalPossible === 0 ? 0 : Math.round((totalEarned / totalPossible) * 100);
+            
+            // Animate Circle
+            setTimeout(() => {
+                document.getElementById('score-circle').setAttribute('stroke-dasharray', `${overall}, 100`);
+                document.getElementById('total-score').innerText = overall;
+            }, 100);
+        }
+    </script>
+</body>
+</html>
