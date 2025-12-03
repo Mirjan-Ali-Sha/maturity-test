@@ -1,4 +1,4 @@
-const CACHE_NAME = 'maturity-game-v1';
+const CACHE_NAME = 'maturity-game-v2'; // Bumped version
 const ASSETS = [
     './',
     './index.html',
