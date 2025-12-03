@@ -6,6 +6,7 @@
     <title>Maturity Index</title>
     
     <link rel="icon" type="image/svg+xml" href="icon.svg">
+    
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
     
@@ -25,12 +26,27 @@
         <button id="pause-btn" class="btn btn-float" style="display: none;" onclick="pauseGame()">⏸</button>
 
         <div id="screen-home" class="screen active">
-            <div style="text-align:center;">
-                <img src="icon.svg" style="width: 80px; height: 80px; margin-bottom: 10px; filter: drop-shadow(0 5px 15px rgba(99,102,241,0.4)); animation: float 4s ease-in-out infinite;">
+            <div style="text-align:center; margin-bottom: 10px;">
+                <svg width="80" height="80" viewBox="0 0 512 512" style="filter: drop-shadow(0 5px 15px rgba(99,102,241,0.4)); animation: float 4s ease-in-out infinite;">
+                    <defs>
+                        <linearGradient id="gradHome" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <rect width="512" height="512" rx="100" fill="url(#gradHome)" />
+                    <path d="M130 350 L200 200 L300 300 L380 150" stroke="white" stroke-width="40" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    <circle cx="130" cy="350" r="20" fill="white"/><circle cx="200" cy="200" r="20" fill="white"/><circle cx="300" cy="300" r="20" fill="white"/><circle cx="380" cy="150" r="20" fill="white"/>
+                </svg>
             </div>
+
             <h1>Maturity Index</h1>
-            <p style="margin-bottom: 2rem;">Master your life skills across 5 dimensions.</p>
+            <p style="margin-bottom: 1.5rem;">Master your life skills across 5 dimensions.</p>
             
+            <div class="input-group">
+                <input type="text" id="player-name" class="glossy-input" placeholder="Enter Name (Optional for Guest)" />
+            </div>
+
             <div id="resume-container" style="display:none; margin-bottom: 20px;">
                 <button class="btn btn-secondary" onclick="resumeGame()">Resume Saved Game ▶</button>
             </div>
@@ -63,7 +79,20 @@
             <div class="badge-container" id="badge-display">
                 <div class="badge-header">
                     <div class="badge-app-icon">
-                        <img src="icon.svg" alt="App Icon">
+                        <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:100%;">
+                            <defs>
+                                <linearGradient id="gradBadge" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <rect width="512" height="512" rx="100" fill="url(#gradBadge)" />
+                            <path d="M130 350 L200 200 L300 300 L380 150" stroke="white" stroke-width="40" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                            <circle cx="130" cy="350" r="20" fill="white"/>
+                            <circle cx="200" cy="200" r="20" fill="white"/>
+                            <circle cx="300" cy="300" r="20" fill="white"/>
+                            <circle cx="380" cy="150" r="20" fill="white"/>
+                        </svg>
                     </div>
                     <div style="text-align:left; line-height:1.2">
                         <small style="font-weight:800; display:block; color:#1f2937; font-size: 1rem; text-transform:uppercase;">Maturity Index</small>
@@ -78,8 +107,7 @@
                 <div style="font-size: 3.5rem; font-weight: 900; color: var(--primary-dark); line-height:1; margin: 10px 0;" id="final-score">0</div>
                 <small style="color:#6b7280; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Overall Score</small>
 
-                <div id="badge-stats-mini" style="margin-top:20px; display:flex; justify-content:center; gap:6px;">
-                    </div>
+                <div id="badge-stats-mini" style="margin-top:20px; display:flex; justify-content:center; gap:6px;"></div>
 
                 <div class="badge-footer">
                     Created by <br>
@@ -88,7 +116,6 @@
             </div>
 
             <button class="btn btn-save" onclick="downloadBadge()">📸 Save Badge to Gallery</button>
-            
             <div id="stats-breakdown" style="margin-top:20px;"></div>
             <button class="btn btn-secondary" onclick="quitGame()">Back to Home</button>
         </div>
@@ -107,13 +134,8 @@
             { id: 'expert',  name: 'Expert',  count: 10, icon: '👑' }  
         ];
 
-        // Weights
         const CATEGORY_WEIGHTS = {
-            "Emotional":    1.5,
-            "Financial":    1.2,
-            "Professional": 1.0, 
-            "Social":       1.0,
-            "Resilience":   0.8  
+            "Emotional": 1.5, "Financial": 1.2, "Professional": 1.0, "Social": 1.0, "Resilience": 0.8  
         };
 
         let gameState = { active: false, levelId: null, queue: [], currentIndex: 0, scores: {}, playerName: "" };
@@ -128,9 +150,14 @@
 
             renderLevelSelect();
             checkSavedGame();
+            
+            const savedName = localStorage.getItem('maturity_player_name');
+            if(savedName && savedName !== "Guest") document.getElementById('player-name').value = savedName;
+
             if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
         };
 
+        // --- UPDATED RENDER FUNCTION ---
         function renderLevelSelect() {
             const container = document.getElementById('level-list');
             container.innerHTML = '';
@@ -143,9 +170,15 @@
                 const div = document.createElement('div');
                 div.className = 'level-card';
                 
-                let scoreHtml = '';
+                // IMPORTANT: The click listener is now on the whole card
+                div.onclick = () => startNewGame(lvl.id); 
+                
+                // Logic for Score Pill vs "Start" Text
+                let rightSideContent = '';
                 if (score !== null) {
-                    scoreHtml = `
+                    // Note: event.stopPropagation() prevents the download button click 
+                    // from starting the game
+                    rightSideContent = `
                         <div class="score-pill-container">
                             <span class="score-pill">Best: ${score}</span>
                             <button class="btn-icon-small" onclick="downloadHighScore('${lvl.id}', '${lvl.name}', ${score}, event)">
@@ -154,18 +187,19 @@
                         </div>
                     `;
                 } else {
-                    scoreHtml = `<span style="font-size:0.8rem; color:#9ca3af; font-weight:500;">Start</span>`;
+                    rightSideContent = `<span style="font-size:0.8rem; color:#9ca3af; font-weight:700;">Start</span>`;
                 }
 
+                // Inner HTML does NOT have onclick anymore, only layout
                 div.innerHTML = `
-                    <div style="display:flex; align-items:center; gap: 15px;" onclick="startNewGame('${lvl.id}')">
+                    <div style="display:flex; align-items:center; gap: 15px;">
                         <span style="font-size:2rem;">${lvl.icon}</span>
                         <div style="text-align:left;">
                             <div style="font-weight:700; font-size:1.1rem; color:var(--text);">${lvl.name}</div>
                             <div style="font-size:0.85rem; color:#6b7280; font-weight:500;">${totalQuestions} Questions</div>
                         </div>
                     </div>
-                    ${scoreHtml}
+                    ${rightSideContent}
                 `;
                 container.appendChild(div);
             });
@@ -178,10 +212,16 @@
 
         // --- GAME LOGIC ---
         function startNewGame(levelId) {
-            // NOTE: We do NOT ask for name here anymore. We ask at end.
+            let nameInput = document.getElementById('player-name').value.trim();
+            if(!nameInput) {
+                nameInput = "Guest";
+            } else {
+                localStorage.setItem('maturity_player_name', nameInput);
+            }
+
             const levelConfig = LEVELS.find(l => l.id === levelId);
             gameState = {
-                active: true, levelId: levelId, playerName: "Player", // Default placeholder
+                active: true, levelId: levelId, playerName: nameInput,
                 queue: generateQuestionQueue(levelConfig.count),
                 currentIndex: 0, scores: {}
             };
@@ -201,17 +241,14 @@
             for (const [category, questions] of Object.entries(questionData)) {
                 let available = questions.filter(q => !seenIDs.includes(q.id));
                 if (available.length < countPerCat) {
-                    // Recycle IDs
                     const catIds = questions.map(q => q.id);
                     seenIDs = seenIDs.filter(id => !catIds.includes(id));
                     available = [...questions];
                 }
-                // Shuffle available
                 for (let i = available.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [available[i], available[j]] = [available[j], available[i]];
                 }
-                
                 const selected = available.slice(0, countPerCat);
                 selected.forEach(q => {
                     queue.push({ ...q, category });
@@ -266,7 +303,6 @@
             document.getElementById('modal-pause').classList.remove('visible');
         }
         function saveGameState() { localStorage.setItem('maturity_save_state', JSON.stringify(gameState)); }
-        
         function quitGame() {
             gameState.active = false;
             document.getElementById('pause-btn').style.display = 'none';
@@ -276,17 +312,15 @@
             checkSavedGame();
         }
 
-        // --- SCORING & BADGE GEN ---
+        // --- END GAME & SCORING ---
         function endGame() {
             localStorage.removeItem('maturity_save_state');
             document.getElementById('pause-btn').style.display = 'none';
 
-            let totalWeightedScore = 0;
-            let totalWeightUsed = 0;
+            let totalWeightedScore = 0, totalWeightUsed = 0;
             const statsContainer = document.getElementById('stats-breakdown');
             const miniStatsContainer = document.getElementById('badge-stats-mini');
-            statsContainer.innerHTML = '';
-            miniStatsContainer.innerHTML = '';
+            statsContainer.innerHTML = ''; miniStatsContainer.innerHTML = '';
 
             for (const [cat, data] of Object.entries(gameState.scores)) {
                 const rawPercent = data.possible === 0 ? 0 : (data.earned / data.possible) * 100;
@@ -294,7 +328,6 @@
                 totalWeightedScore += (rawPercent * weight);
                 totalWeightUsed += weight;
 
-                // Full Stat Bar
                 statsContainer.innerHTML += `
                     <div class="stat-row">
                         <span style="width:100px;">${cat}</span>
@@ -302,58 +335,39 @@
                         <span style="width:40px; text-align:right;">${Math.round(rawPercent)}%</span>
                     </div>`;
                 
-                // Mini dots for Badge
                 const color = rawPercent > 70 ? '#10b981' : (rawPercent > 40 ? '#f59e0b' : '#ef4444');
                 miniStatsContainer.innerHTML += `<div style="width:10px; height:10px; border-radius:50%; background:${color};" title="${cat}"></div>`;
             }
 
             const finalScore = totalWeightUsed === 0 ? 0 : Math.round(totalWeightedScore / totalWeightUsed);
             
-            // Save High Score
             const highScores = JSON.parse(localStorage.getItem('maturity_high_scores') || '{}');
             if (finalScore > (highScores[gameState.levelId] || 0)) {
                 highScores[gameState.levelId] = finalScore;
                 localStorage.setItem('maturity_high_scores', JSON.stringify(highScores));
             }
 
-            // Populate Badge Details (Temporary name until download)
             const levelName = LEVELS.find(l => l.id === gameState.levelId).name;
             document.getElementById('badge-title').innerText = `${levelName} Level`;
-            
-            // Use stored name if available, else placeholder
-            const storedName = localStorage.getItem('maturity_player_name');
-            document.getElementById('badge-player').innerText = storedName || "Your Name Here";
-            
+            document.getElementById('badge-player').innerText = gameState.playerName || "Guest";
             document.getElementById('final-score').innerText = finalScore;
 
             switchScreen('screen-dashboard');
         }
 
-        // --- DOWNLOAD LOGIC WITH NAME PROMPT ---
-
+        // --- DOWNLOAD BADGE ---
         function downloadBadge() {
-            // 1. Ask for Name
             let currentName = document.getElementById('badge-player').innerText;
-            if(currentName === "Your Name Here" || currentName === "Player") {
-                currentName = ""; 
-            }
-            
-            const newName = prompt("Please enter your name for the badge:", currentName);
-            
-            // If user cancels prompt, we still proceed but with placeholder/old name? 
-            // Better to only proceed if they enter something or leave it as is.
+            if(currentName === "Guest") currentName = "";
+
+            const newName = prompt("Enter name for badge:", currentName);
             if(newName !== null && newName.trim() !== "") {
                 document.getElementById('badge-player').innerText = newName;
-                localStorage.setItem('maturity_player_name', newName); // Remember for next time
+                if(newName !== "Guest") localStorage.setItem('maturity_player_name', newName);
             }
 
-            // 2. Generate Image
             const badgeElement = document.getElementById('badge-display');
-            html2canvas(badgeElement, {
-                scale: 3, // High Res
-                backgroundColor: null, // Transparent background (CSS handles white box)
-                useCORS: true
-            }).then(canvas => {
+            html2canvas(badgeElement, { scale: 3, backgroundColor: null }).then(canvas => {
                 const link = document.createElement('a');
                 link.download = `Maturity_Badge_${gameState.levelId}.png`;
                 link.href = canvas.toDataURL("image/png");
@@ -361,22 +375,14 @@
             });
         }
 
-        // Triggered from Home Screen "Download Icon"
         function downloadHighScore(levelId, levelName, score, event) {
+            // STOP CLICK FROM BUBBLING TO CARD (Prevents starting game)
             event.stopPropagation();
-
-            // 1. Ask for name
-            let playerName = localStorage.getItem('maturity_player_name') || "";
-            const newName = prompt("Enter your name for this badge:", playerName);
             
-            if(newName !== null && newName.trim() !== "") {
-                playerName = newName;
-                localStorage.setItem('maturity_player_name', newName);
-            } else if (playerName === "") {
-                playerName = "Player"; // Fallback
-            }
+            let playerName = localStorage.getItem('maturity_player_name') || "Guest";
+            const newName = prompt("Enter name for badge:", playerName);
+            if(newName !== null && newName.trim() !== "") playerName = newName;
 
-            // 2. Setup Offscreen Badge
             const container = document.getElementById('offscreen-capture');
             container.innerHTML = document.getElementById('badge-display').outerHTML;
             const tempBadge = container.querySelector('.badge-container');
@@ -386,11 +392,7 @@
             tempBadge.querySelector('#final-score').innerText = score;
             tempBadge.querySelector('#badge-stats-mini').innerHTML = ''; 
 
-            // 3. Capture
-            html2canvas(tempBadge, {
-                scale: 3,
-                backgroundColor: null
-            }).then(canvas => {
+            html2canvas(tempBadge, { scale: 3, backgroundColor: null }).then(canvas => {
                 const link = document.createElement('a');
                 link.download = `Maturity_Best_${levelId}.png`;
                 link.href = canvas.toDataURL("image/png");
