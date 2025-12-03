@@ -85,13 +85,16 @@
 
     <script src="questions.js"></script>
     <script>
-        // CONFIG
+        // --- CONFIGURATION ---
+        // 'count' here means: How many questions FROM EACH CATEGORY.
+        // The Total Questions = count * 5 Categories.
+        
         const LEVELS = [
-            { id: 'easy', name: 'Easy', count: 10, icon: '🌱' },
-            { id: 'medium', name: 'Medium', count: 20, icon: '🌿' },
-            { id: 'hard', name: 'Hard', count: 30, icon: '🌳' },
-            { id: 'advance', name: 'Advance', count: 40, icon: '🌲' },
-            { id: 'expert', name: 'Expert', count: 50, icon: '👑' }
+            { id: 'easy',    name: 'Easy',    count: 2,  icon: '🌱' }, // 2 * 5 = 10 Total Questions
+            { id: 'medium',  name: 'Medium',  count: 4,  icon: '🌿' }, // 4 * 5 = 20 Total Questions
+            { id: 'hard',    name: 'Hard',    count: 6,  icon: '🌳' }, // 6 * 5 = 30 Total Questions
+            { id: 'advance', name: 'Advance', count: 8,  icon: '🌲' }, // 8 * 5 = 40 Total Questions
+            { id: 'expert',  name: 'Expert',  count: 10, icon: '👑' }  // 10 * 5 = 50 Total Questions
         ];
 
         let gameState = { active: false, levelId: null, queue: [], currentIndex: 0, scores: {}, playerName: "" };
