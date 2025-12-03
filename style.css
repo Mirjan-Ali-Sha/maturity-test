@@ -20,9 +20,66 @@ body {
     min-height: 100vh;
     padding: 20px;
     box-sizing: border-box;
+    /* Prevent scrolling on body when splash is active */
+    overflow-x: hidden; 
 }
 
-/* Glassmorphism Container */
+/* --- SPLASH SCREEN --- */
+#splash-screen {
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%;
+    background: var(--bg-gradient); 
+    z-index: 9999;
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center; 
+    align-items: center;
+    text-align: center; 
+    color: white;
+    /* Transition properties */
+    transition: opacity 1s ease-out, visibility 1s;
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Class to hide splash (controlled by JS) */
+#splash-screen.hidden { 
+    opacity: 0; 
+    visibility: hidden; 
+}
+
+.splash-logo { 
+    font-size: 5rem; 
+    text-shadow: 0 10px 20px rgba(0,0,0,0.2); 
+    animation: float 3s ease-in-out infinite; 
+}
+
+.splash-title { 
+    font-size: 2.5rem; 
+    font-weight: 800; 
+    margin: 10px 0; 
+    letter-spacing: 2px; 
+}
+
+.splash-tagline { 
+    font-size: 1.2rem; 
+    font-style: italic; 
+    opacity: 0.9; 
+    margin-bottom: 40px; 
+}
+
+.author-credit { 
+    position: absolute; 
+    bottom: 30px; 
+    font-size: 0.9rem; 
+    opacity: 0.8; 
+    letter-spacing: 1px; 
+}
+
+/* --- MAIN APP CONTAINER --- */
 .app-container {
     width: 100%;
     max-width: 500px;
@@ -75,38 +132,45 @@ p { color: var(--text-light); line-height: 1.6; }
 
 .btn:active { transform: scale(0.98); }
 .btn-secondary { background: white; color: var(--primary); border: 2px solid var(--primary); box-shadow: none; }
-.btn-small { padding: 0.5rem 1rem; font-size: 0.9rem; width: auto; }
 .btn-float { position: absolute; top: 1rem; right: 1rem; width: 40px; height: 40px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; z-index: 100;}
 
+/* Name Input */
+.input-group { margin-bottom: 20px; width: 100%; box-sizing: border-box; }
+.glossy-input {
+    width: 100%; 
+    padding: 15px; 
+    border-radius: 12px; 
+    border: 2px solid rgba(255,255,255,0.5);
+    background: rgba(255,255,255,0.5); /* Slightly clearer background */
+    color: var(--text); 
+    font-size: 1.1rem;
+    outline: none; 
+    text-align: center; 
+    transition: all 0.3s;
+    box-sizing: border-box;
+}
+.glossy-input:focus { border-color: var(--primary); background: white; }
+
 /* Level Select Grid */
-/* Add/Update this in style.css */
+.level-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin: 20px 0; }
 .level-card {
     background: white; 
     border: 2px solid transparent; 
-    padding: 15px 20px; /* More padding */
-    border-radius: 16px; /* Rounder corners */
+    padding: 15px 20px;
+    border-radius: 16px; 
     cursor: pointer; 
     display: flex; 
     justify-content: space-between; 
     align-items: center;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.02); /* Softer shadow */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
     transition: all 0.2s ease;
     margin-bottom: 12px;
 }
-
 .level-card:hover { 
     border-color: var(--primary); 
     transform: translateY(-3px); 
-    box-shadow: 0 10px 15px rgba(99, 102, 241, 0.15); /* Glossy glow on hover */
+    box-shadow: 0 10px 15px rgba(99, 102, 241, 0.15); 
 }
-.level-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin: 20px 0; }
-.level-card {
-    background: white; border: 2px solid transparent; padding: 15px; border-radius: 12px;
-    cursor: pointer; display: flex; justify-content: space-between; align-items: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: all 0.2s;
-}
-.level-card:hover { border-color: var(--primary); transform: translateY(-2px); }
-.level-card.locked { opacity: 0.6; pointer-events: none; filter: grayscale(1); }
 .level-card .score-pill { background: #e0e7ff; color: var(--primary-dark); padding: 4px 8px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
 
 /* Quiz UI */
@@ -128,6 +192,10 @@ p { color: var(--text-light); line-height: 1.6; }
     background: linear-gradient(135deg, #fff 0%, #f3f4f6 100%);
     border-radius: 20px; border: 2px dashed #d1d5db;
 }
+.badge-header { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; }
+.badge-app-icon { width: 40px; height: 40px; border-radius: 8px; background: var(--bg-gradient); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; overflow: hidden;}
+.badge-footer { margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px; font-size: 0.8rem; color: #666; }
+
 .badge-icon { font-size: 3rem; margin-bottom: 10px; display: block; }
 .stat-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; }
 .stat-bar-bg { flex: 1; height: 8px; background: #e5e7eb; margin-left: 10px; border-radius: 4px; align-self: center; }
@@ -143,40 +211,6 @@ p { color: var(--text-light); line-height: 1.6; }
 }
 .modal.visible { opacity: 1; pointer-events: auto; }
 
+/* Animations */
 @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-/* ... Keep all previous root and body styles ... */
-
-/* NEW: Splash Screen */
-#splash-screen {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: var(--bg-gradient); z-index: 9999;
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
-    text-align: center; color: white;
-    transition: opacity 1s ease-out, visibility 1s;
-}
-#splash-screen.hidden { opacity: 0; visibility: hidden; }
-
-.splash-logo { font-size: 5rem; text-shadow: 0 10px 20px rgba(0,0,0,0.2); animation: float 3s ease-in-out infinite; }
-.splash-title { font-size: 2.5rem; font-weight: 800; margin: 10px 0; letter-spacing: 2px; }
-.splash-tagline { font-size: 1.2rem; font-style: italic; opacity: 0.9; margin-bottom: 40px; }
-.author-credit { position: absolute; bottom: 30px; font-size: 0.9rem; opacity: 0.8; letter-spacing: 1px; }
-
-/* NEW: Name Input Styling */
-.input-group { margin-bottom: 20px; width: 100%; }
-.glossy-input {
-    width: 100%; padding: 15px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.5);
-    background: rgba(255,255,255,0.2); color: var(--text); font-size: 1.1rem;
-    outline: none; text-align: center; transition: all 0.3s;
-    box-sizing: border-box; /* Fix padding issue */
-}
-.glossy-input:focus { border-color: var(--primary); background: white; }
-
-/* Badge Updates */
-.badge-header { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; }
-.badge-app-icon { width: 40px; height: 40px; border-radius: 8px; background: var(--bg-gradient); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
-.badge-footer { margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px; font-size: 0.8rem; color: #666; }
-
-/* Existing Animations */
 @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
-
-/* ... Keep previous CSS for buttons, grid, modals ... */
