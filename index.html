@@ -23,8 +23,6 @@
 
     <div class="app-container">
         
-        <button id="pause-btn" class="btn btn-float" style="display: none;" onclick="pauseGame()">⏸</button>
-
         <div id="screen-home" class="screen active">
             <div style="text-align:center; margin-bottom: 10px;">
                 <svg width="80" height="80" viewBox="0 0 512 512" style="filter: drop-shadow(0 5px 15px rgba(99,102,241,0.4)); animation: float 4s ease-in-out infinite;">
@@ -58,8 +56,16 @@
 
         <div id="screen-game" class="screen">
             <div class="header-bar">
-                <span id="game-level-display" style="font-weight:bold; color:var(--text-light)">Level</span>
-                </div>
+                <span id="game-level-display">Level</span>
+                
+                <button id="pause-btn" class="btn-pause" onclick="pauseGame()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                        <rect x="6" y="4" width="4" height="16" rx="1" />
+                        <rect x="14" y="4" width="4" height="16" rx="1" />
+                    </svg>
+                </button>
+            </div>
+
             <div class="progress-container">
                 <div id="progress-fill" class="progress-fill"></div>
             </div>
@@ -137,13 +143,12 @@
             "Emotional": 1.5, "Financial": 1.2, "Professional": 1.0, "Social": 1.0, "Resilience": 0.8  
         };
 
-        // NEW: Fixed Colors for Categories
         const CATEGORY_COLORS = {
-            "Emotional":    "#8b5cf6", // Purple
-            "Financial":    "#10b981", // Green
-            "Professional": "#3b82f6", // Blue
-            "Social":       "#f43f5e", // Pink/Rose
-            "Resilience":   "#f59e0b"  // Orange
+            "Emotional":    "#8b5cf6", 
+            "Financial":    "#10b981", 
+            "Professional": "#3b82f6", 
+            "Social":       "#f43f5e", 
+            "Resilience":   "#f59e0b"  
         };
 
         let gameState = { active: false, levelId: null, queue: [], currentIndex: 0, scores: {}, playerName: "" };
@@ -220,7 +225,7 @@
 
             saveGameState();
             switchScreen('screen-game');
-            document.getElementById('pause-btn').style.display = 'flex';
+            // document.getElementById('pause-btn').style.display = 'flex'; // Removed: Button is now inside screen
             document.getElementById('game-level-display').innerText = levelConfig.name;
             renderQuestion();
         }
@@ -254,14 +259,11 @@
             if (gameState.currentIndex >= gameState.queue.length) { endGame(); return; }
             const q = gameState.queue[gameState.currentIndex];
             
-            // NOTE: We no longer show the category text.
-            // document.getElementById('q-category').innerText = q.category; 
-            
-            // Logic: Update Pause Button Color based on Category
+            // COLOR LOGIC for Pause Button
             const catColor = CATEGORY_COLORS[q.category] || "#6366f1";
             const pauseBtn = document.getElementById('pause-btn');
             pauseBtn.style.background = catColor;
-            pauseBtn.style.boxShadow = `0 4px 15px ${catColor}66`; // Add transparency to shadow
+            pauseBtn.style.boxShadow = `0 4px 15px ${catColor}66`; 
 
             document.getElementById('q-text').innerText = q.text;
             const pct = (gameState.currentIndex / gameState.queue.length) * 100;
@@ -296,27 +298,24 @@
                     gameState = JSON.parse(saved);
                     gameState.active = true;
                     switchScreen('screen-game');
-                    document.getElementById('pause-btn').style.display = 'flex';
                     renderQuestion();
                 }
             }
             document.getElementById('modal-pause').classList.remove('visible');
         }
         function saveGameState() { localStorage.setItem('maturity_save_state', JSON.stringify(gameState)); }
+        
         function quitGame() {
             gameState.active = false;
-            document.getElementById('pause-btn').style.display = 'none';
             document.getElementById('modal-pause').classList.remove('visible');
             switchScreen('screen-home');
             renderLevelSelect();
             checkSavedGame();
         }
 
-        // --- END GAME & SCORING ---
         function endGame() {
             localStorage.removeItem('maturity_save_state');
-            document.getElementById('pause-btn').style.display = 'none';
-
+            
             let totalWeightedScore = 0, totalWeightUsed = 0;
             const statsContainer = document.getElementById('stats-breakdown');
             const miniStatsContainer = document.getElementById('badge-stats-mini');
@@ -328,7 +327,6 @@
                 totalWeightedScore += (rawPercent * weight);
                 totalWeightUsed += weight;
 
-                // Use the specific Category Color for the progress bar
                 const catColor = CATEGORY_COLORS[cat] || "#6366f1";
 
                 statsContainer.innerHTML += `
@@ -338,7 +336,6 @@
                         <span style="width:40px; text-align:right;">${Math.round(rawPercent)}%</span>
                     </div>`;
                 
-                // Mini dots for Badge
                 const dotColor = rawPercent > 70 ? '#10b981' : (rawPercent > 40 ? '#f59e0b' : '#ef4444');
                 miniStatsContainer.innerHTML += `<div style="width:10px; height:10px; border-radius:50%; background:${dotColor};" title="${cat}"></div>`;
             }
@@ -359,7 +356,6 @@
             switchScreen('screen-dashboard');
         }
 
-        // --- DOWNLOAD BADGE ---
         function downloadBadge() {
             let currentName = document.getElementById('badge-player').innerText;
             if(currentName === "Guest") currentName = "";
@@ -382,7 +378,6 @@
         function downloadHighScore(levelId, levelName, score, event) {
             event.stopPropagation();
             let playerName = localStorage.getItem('maturity_player_name') || "Guest";
-            
             const newName = prompt("Enter name for badge:", playerName);
             if(newName !== null && newName.trim() !== "") playerName = newName;
 
