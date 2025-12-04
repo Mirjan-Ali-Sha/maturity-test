@@ -59,8 +59,7 @@
         <div id="screen-game" class="screen">
             <div class="header-bar">
                 <span id="game-level-display" style="font-weight:bold; color:var(--text-light)">Level</span>
-                <span class="category-tag" id="q-category">Category</span>
-            </div>
+                </div>
             <div class="progress-container">
                 <div id="progress-fill" class="progress-fill"></div>
             </div>
@@ -138,6 +137,15 @@
             "Emotional": 1.5, "Financial": 1.2, "Professional": 1.0, "Social": 1.0, "Resilience": 0.8  
         };
 
+        // NEW: Fixed Colors for Categories
+        const CATEGORY_COLORS = {
+            "Emotional":    "#8b5cf6", // Purple
+            "Financial":    "#10b981", // Green
+            "Professional": "#3b82f6", // Blue
+            "Social":       "#f43f5e", // Pink/Rose
+            "Resilience":   "#f59e0b"  // Orange
+        };
+
         let gameState = { active: false, levelId: null, queue: [], currentIndex: 0, scores: {}, playerName: "" };
 
         // INIT
@@ -157,7 +165,6 @@
             if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
         };
 
-        // --- UPDATED RENDER FUNCTION ---
         function renderLevelSelect() {
             const container = document.getElementById('level-list');
             container.innerHTML = '';
@@ -169,28 +176,12 @@
 
                 const div = document.createElement('div');
                 div.className = 'level-card';
+                div.onclick = () => startNewGame(lvl.id);
                 
-                // IMPORTANT: The click listener is now on the whole card
-                div.onclick = () => startNewGame(lvl.id); 
-                
-                // Logic for Score Pill vs "Start" Text
-                let rightSideContent = '';
-                if (score !== null) {
-                    // Note: event.stopPropagation() prevents the download button click 
-                    // from starting the game
-                    rightSideContent = `
-                        <div class="score-pill-container">
-                            <span class="score-pill">Best: ${score}</span>
-                            <button class="btn-icon-small" onclick="downloadHighScore('${lvl.id}', '${lvl.name}', ${score}, event)">
-                                📥
-                            </button>
-                        </div>
-                    `;
-                } else {
-                    rightSideContent = `<span style="font-size:0.8rem; color:#9ca3af; font-weight:700;">Start</span>`;
-                }
+                let rightSideContent = (score !== null) 
+                    ? `<div class="score-pill-container"><span class="score-pill">Best: ${score}</span><button class="btn-icon-small" onclick="downloadHighScore('${lvl.id}', '${lvl.name}', ${score}, event)">📥</button></div>` 
+                    : `<span style="font-size:0.8rem; color:#9ca3af; font-weight:700;">Start</span>`;
 
-                // Inner HTML does NOT have onclick anymore, only layout
                 div.innerHTML = `
                     <div style="display:flex; align-items:center; gap: 15px;">
                         <span style="font-size:2rem;">${lvl.icon}</span>
@@ -262,7 +253,16 @@
         function renderQuestion() {
             if (gameState.currentIndex >= gameState.queue.length) { endGame(); return; }
             const q = gameState.queue[gameState.currentIndex];
-            document.getElementById('q-category').innerText = q.category;
+            
+            // NOTE: We no longer show the category text.
+            // document.getElementById('q-category').innerText = q.category; 
+            
+            // Logic: Update Pause Button Color based on Category
+            const catColor = CATEGORY_COLORS[q.category] || "#6366f1";
+            const pauseBtn = document.getElementById('pause-btn');
+            pauseBtn.style.background = catColor;
+            pauseBtn.style.boxShadow = `0 4px 15px ${catColor}66`; // Add transparency to shadow
+
             document.getElementById('q-text').innerText = q.text;
             const pct = (gameState.currentIndex / gameState.queue.length) * 100;
             document.getElementById('progress-fill').style.width = `${pct}%`;
@@ -328,15 +328,19 @@
                 totalWeightedScore += (rawPercent * weight);
                 totalWeightUsed += weight;
 
+                // Use the specific Category Color for the progress bar
+                const catColor = CATEGORY_COLORS[cat] || "#6366f1";
+
                 statsContainer.innerHTML += `
                     <div class="stat-row">
                         <span style="width:100px;">${cat}</span>
-                        <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${rawPercent}%"></div></div>
+                        <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${rawPercent}%; background:${catColor};"></div></div>
                         <span style="width:40px; text-align:right;">${Math.round(rawPercent)}%</span>
                     </div>`;
                 
-                const color = rawPercent > 70 ? '#10b981' : (rawPercent > 40 ? '#f59e0b' : '#ef4444');
-                miniStatsContainer.innerHTML += `<div style="width:10px; height:10px; border-radius:50%; background:${color};" title="${cat}"></div>`;
+                // Mini dots for Badge
+                const dotColor = rawPercent > 70 ? '#10b981' : (rawPercent > 40 ? '#f59e0b' : '#ef4444');
+                miniStatsContainer.innerHTML += `<div style="width:10px; height:10px; border-radius:50%; background:${dotColor};" title="${cat}"></div>`;
             }
 
             const finalScore = totalWeightUsed === 0 ? 0 : Math.round(totalWeightedScore / totalWeightUsed);
@@ -376,10 +380,9 @@
         }
 
         function downloadHighScore(levelId, levelName, score, event) {
-            // STOP CLICK FROM BUBBLING TO CARD (Prevents starting game)
             event.stopPropagation();
-            
             let playerName = localStorage.getItem('maturity_player_name') || "Guest";
+            
             const newName = prompt("Enter name for badge:", playerName);
             if(newName !== null && newName.trim() !== "") playerName = newName;
 
